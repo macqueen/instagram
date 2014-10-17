@@ -1,0 +1,46 @@
+<html>
+    <head>
+        <title>Zipcoto</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js">
+        </script>
+    </head>
+    <body>
+        <form>
+            <input type="text" placeholder="94107">
+            <button type="submit">Find Some Pictures</button>
+        </form>
+        <div class="pictures">
+        </div>
+        <script type="text/javascript">
+            $(function() {
+                $('form').on('submit', function(ev) {
+                    ev.preventDefault();
+                    var $input = $(ev.target).find('input'),
+                        zip = $input.val(),
+                        $pics = $('.pictures');
+                    $input.val('');
+                    $pics.empty();
+                    $pics.append('<div>Loading...</div>');
+                    $.ajax({
+                        url: zip,
+                        success: function(data) {
+                            var title = '<h1>' + data.zip_data.city + ', ' +
+                                        data.zip_data.state + '</h1>';
+                            $pics.empty();
+                            $pics.append(title);
+                            for (var i = 0; i < data.images.length; i++) {
+                                var elem = '<img src="' + data.images[i] + '">';
+                                $pics.append(elem);
+                            }
+                        },
+                        error: function(xhr, error) {
+                            var elem = '<div>There was an error searching for ' + zip + '.';
+                            $pics.empty();
+                            $pics.append(elem);
+                        }
+                    });
+                });
+            });
+        </script>
+    </body>
+</html>
