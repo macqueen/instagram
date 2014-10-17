@@ -26,16 +26,20 @@ class Thread(threading.Thread):
     def __init__(self, queue):
         threading.Thread.__init__(self)
         self.queue = queue
-        self.results = []
 
     def run(self):
         while True:
-            l_id = self.queue.get()
-            media_url = IG_RECENT_LOCATIONS.format(location_id=l_id)
+            l = self.queue.get()
+            media_url = IG_RECENT_LOCATIONS.format(location_id=l.id)
             r_media = requests.get(media_url)
             data = json.loads(r_media.content)['data']
-            self.results.extend(data)
+            l.results = data
             self.queue.task_done()
+
+
+class Location(object):
+    def __init__(self, id):
+        self.id = id
 
 
 class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -63,7 +67,7 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
                                                          lng=zip_data['longitude'])
                 r_location = requests.get(location_url)
                 location_data = json.loads(r_location.content)['data']
-                location_ids = [l['id'] for l in location_data]
+                locations = [Location(l['id']) for l in location_data]
 
                 threads = []
                 for i in range(5):
@@ -72,13 +76,13 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
                     threads.append(t)
                     t.start()
 
-                for l_id in location_ids:
-                    queue.put(l_id)
+                for l in locations:
+                    queue.put(l)
 
                 queue.join()
                 media_data = []
-                for t in threads:
-                    media_data.extend(t.results)
+                for l in locations:
+                    media_data.extend(l.results)
 
                 image_links = [m['images']['standard_resolution']['url'] for m in media_data]
                 self.send_response(200)
